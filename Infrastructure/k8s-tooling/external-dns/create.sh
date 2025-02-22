@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Get the directory of this script so paths work regardless of the current directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Define a list of valid AWS regions (update as needed)
 VALID_REGIONS=(
   "ap-south-1" "eu-north-1" "eu-west-3" "eu-west-2" "eu-west-1"
@@ -38,24 +41,26 @@ done
 
 echo "Using AWS region: $REGION"
 
-# Write/update the override file (.external-dns.override.yaml)
-cat <<EOF > .external-dns.override.yaml
+# Write/update the override file in the same directory as this script
+OVERRIDE_FILE="$SCRIPT_DIR/.external-dns.override.yaml"
+cat <<EOF > "$OVERRIDE_FILE"
 provider: aws
 env:
   - name: AWS_REGION
     value: "$REGION"
 EOF
 
-echo "Updated .external-dns.override.yaml:"
-cat .external-dns.override.yaml
+echo "Updated override file ($OVERRIDE_FILE):"
+cat "$OVERRIDE_FILE"
 
 # Add the external-dns Helm repository (if not already added)
 helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/ || true
 helm repo update
 
-# Upgrade or install external-dns using your base values and the override file
+# Run the Helm upgrade/install command using the base values file and the override file
+# The base values file is assumed to be in the same directory as this script.
 helm upgrade --install external-dns external-dns/external-dns \
-  -f values.yaml \
-  -f .external-dns.override.yaml
+  -f "$SCRIPT_DIR/values.yaml" \
+  -f "$OVERRIDE_FILE"
 
 echo "Helm upgrade/install completed."
