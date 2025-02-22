@@ -22,16 +22,15 @@ is_valid_region() {
   return 1
 }
 
-# Prompt for AWS region if not set or allow override if already set
-if [ -z "$AWS_REGION" ]; then
-  echo "AWS_REGION is not set in the environment."
-  read -p "Please enter your AWS region (e.g., us-east-1): " REGION
+# If AWS_REGION is set, use it. Otherwise, prompt the user.
+if [ -n "$AWS_REGION" ]; then
+  echo "AWS_REGION is already set to '$AWS_REGION'. Using it."
+  REGION="$AWS_REGION"
 else
-  read -p "AWS_REGION is set to '$AWS_REGION'. Press Enter to use this or type a different region: " USER_INPUT
-  REGION=${USER_INPUT:-$AWS_REGION}
+  read -p "AWS_REGION is not set. Please enter your AWS region (e.g., us-east-1): " REGION
 fi
 
-# Validate the region, re-prompt if invalid
+# Validate the region; if invalid, keep prompting.
 while ! is_valid_region "$REGION"; do
   echo "Error: '$REGION' is not a valid AWS region."
   read -p "Please enter a valid AWS region (e.g., us-east-1): " REGION
