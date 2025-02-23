@@ -70,9 +70,8 @@ helm del external-dns  # Uninstall first
 external_dns_iam_policy="arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
 aws iam detach-role-policy --role-name ${nodegroup_iam_role} --policy-arn ${external_dns_iam_policy}
 
-# Wait for AWS Load Balancer webhook service endpoints to become available
 echo "Waiting for AWS Load Balancer webhook service endpoints..."
-while [ $(kubectl get endpoints aws-load-balancer-webhook-service -n kube-system --no-headers | wc -l) -eq 0 ]; do
+until kubectl get endpoints aws-load-balancer-webhook-service -n kube-system -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null | grep -q '.'; do
   echo "Waiting for webhook endpoints..."
   sleep 5
 done
