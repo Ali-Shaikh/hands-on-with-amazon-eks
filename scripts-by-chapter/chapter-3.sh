@@ -81,12 +81,16 @@ echo "Webhook service endpoints are now available."
 
 # Updating IRSA for VPC CNI
 vpc_cni_iam_policy="arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-# List AWS-managed policies and check if the VPC CNI policy exists.
-if aws iam list-policies --scope AWS --query "Policies[?PolicyName=='AmazonEKS_CNI_Policy'].Arn" --output text | grep -q "${vpc_cni_iam_policy}"; then
+
+# Check if the policy is attached to the role
+attached=$(aws iam list-attached-role-policies --role-name "${nodegroup_iam_role}" \
+    --query "AttachedPolicies[?PolicyArn=='${vpc_cni_iam_policy}']" --output text)
+
+if [ -n "$attached" ]; then
     echo "Detaching VPC CNI policy..."
     aws iam detach-role-policy --role-name "${nodegroup_iam_role}" --policy-arn "${vpc_cni_iam_policy}"
 else
-    echo "Policy ${vpc_cni_iam_policy} not found. Skipping detach."
+    echo "Policy ${vpc_cni_iam_policy} is not attached to role ${nodegroup_iam_role}. Skipping detach."
 fi
 
 ( cd ./Infrastructure/k8s-tooling/cni && ./setup-irsa.sh )
